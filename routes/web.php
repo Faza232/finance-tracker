@@ -5,6 +5,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ForecastController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CalendarController;
 
 
 // Route untuk tampilan login dan registrasi
@@ -31,6 +32,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
     Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
     Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+
+    Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
+    Route::get('/calendar/transactions/{date}', [CalendarController::class, 'getTransactionsByDate'])->name('calendar.transactions');
 });
 
 Route::redirect('/', '/transactions');

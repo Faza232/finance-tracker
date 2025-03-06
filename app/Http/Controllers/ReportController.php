@@ -13,43 +13,33 @@ class ReportController extends Controller
         $filterType = $request->get('filterType', 'yearly'); // Default: yearly
         $selectedYear = $request->get('year', date('Y')); // Default: tahun sekarang
         $selectedMonth = $request->get('month', date('m')); // Default: bulan sekarang
-        $incomeQuery;
-        $expenseQuery;
-        
-        // Jika filterType = monthly, tambahkan filter bulan
-        if ($filterType == 'monthly') {
-            $incomeQuery = Transaction::where('user_id', auth()->id())
-                ->where('type', 'income')
-                ->whereYear('date', $selectedYear)-> whereMonth('date', $selectedMonth);
-            $expenseQuery = Transaction::where('user_id', auth()->id())
-                ->where('type', 'expense')
-                ->whereYear('date', $selectedYear)-> whereMonth('date', $selectedMonth);
-        }else{
-            $incomeQuery = Transaction::where('user_id', auth()->id())
-                ->where('type', 'income')
-                ->whereYear('date', $selectedYear);
-            $expenseQuery = Transaction::where('user_id', auth()->id())
-                ->where('type', 'expense')
-                ->whereYear('date', $selectedYear);
-        }
-
-        // Hitung total income dan total expense
-        $totalIncome = $incomeQuery->sum('amount');
-        $totalExpense = $expenseQuery->sum('amount');
-
+    
+        // Query dasar untuk income dan expense
+        $query = Transaction::where('user_id', auth()->id())
+            ->whereYear('date', $selectedYear)
+            ->when($filterType == 'monthly', function ($query) use ($selectedMonth) {
+                return $query->whereMonth('date', $selectedMonth);
+            });
+    
+        // Hitung total income dan expense
+        $totalIncome = (clone $query)->where('type', 'income')->sum('amount');
+        $totalExpense = (clone $query)->where('type', 'expense')->sum('amount');
+    
         // Ambil data untuk diagram
-        $incomeData = $incomeQuery
+        $incomeData = (clone $query)
+            ->where('type', 'income')
             ->selectRaw('DATE(date) as date, SUM(amount) as total')
             ->groupBy('date')
             ->orderBy('date')
             ->get();
-
-        $expenseData = $expenseQuery
+    
+        $expenseData = (clone $query)
+            ->where('type', 'expense')
             ->selectRaw('DATE(date) as date, SUM(amount) as total')
             ->groupBy('date')
             ->orderBy('date')
             ->get();
-
+    
         return view('reports.index', compact(
             'incomeData',
             'expenseData',
